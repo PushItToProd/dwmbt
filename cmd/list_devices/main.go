@@ -13,5 +13,7 @@ func main() {
 		fmt.Printf("error: %v\n", err)
 		return
 	}
-	fmt.Printf("%+v\n", devices)
+	for _, device := range devices {
+		fmt.Printf("%+v\n", device)
+	}
 }
