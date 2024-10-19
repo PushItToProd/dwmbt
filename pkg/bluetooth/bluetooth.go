@@ -12,6 +12,14 @@ import (
 	"strings"
 )
 
+// onPath returns true if the named executable is on the $PATH. This will return
+// false even if the error is not ErrNotFound, so issues could potentially arise
+// in edge cases.
+func onPath(executable string) bool {
+	_, err := exec.LookPath(executable)
+	return err == nil
+}
+
 type BluetoothDevice struct {
 	Name      string
 	MacAddr   string
@@ -41,8 +49,7 @@ type macosBlueutilBluetoothManager struct{}
 
 func newMacosBlueutilBluetoothManager() macosBlueutilBluetoothManager {
 	// validate blueutil is on the path
-	_, err := exec.LookPath("blueutil")
-	if err != nil {
+	if !onPath("blueutil") {
 		panic("couldn't find blueutil on the path")
 	}
 
@@ -143,9 +150,8 @@ type linuxBluetoothctlBluetoothManager struct{}
 
 func newLinuxBluetoothctlBluetoothManager() linuxBluetoothctlBluetoothManager {
 	// validate bluetoothctl is on the path
-	_, err := exec.LookPath("bluetoothctl")
-	if err != nil {
-		panic("couldn't find blueutil on the path")
+	if !onPath("bluetoothctl") {
+		panic("couldn't find bluetoothctl on the path")
 	}
 
 	return linuxBluetoothctlBluetoothManager{}
