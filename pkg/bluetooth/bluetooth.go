@@ -186,11 +186,14 @@ func (m linuxBluetoothctlBluetoothManager) List() ([]BluetoothDevice, error) {
 	}
 
 	lines := bytes.Split(output, []byte("\n"))
-	devices := make([]BluetoothDevice, len(lines))
+	devices := []BluetoothDevice{}
 	for _, line := range lines {
 		ms := bluetoothctlDeviceListRegex.FindSubmatch(line)
 		if ms == nil {
-			log.Printf("failed to match bluetoothctl device line: %s", string(line))
+			lineStr := string(line)
+			if strings.TrimSpace(lineStr) != "" {
+				log.Printf("failed to match bluetoothctl device line: %s", string(line))
+			}
 			continue
 		}
 		macAddr := string(ms[1])
