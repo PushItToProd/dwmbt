@@ -10,17 +10,26 @@ import (
 	"time"
 )
 
+func setupMux() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello ServeMux")
+	})
+	return mux
+}
+
 func RunServer(ctx context.Context) {
+	mux := setupMux()
+
 	serverAddr := ":8080"
-	server := &http.Server{Addr: serverAddr}
+	server := &http.Server{
+		Addr:    serverAddr,
+		Handler: mux,
+	}
 
 	slog.Info("starting server", "server", server)
 
 	go func() {
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintln(w, "Hello world")
-		})
-
 		ln, err := net.Listen("tcp", server.Addr)
 		if err != nil {
 			slog.Error("net.Listen", "err", err)
