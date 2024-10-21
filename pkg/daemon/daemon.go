@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"time"
 )
 
 func RunServer(ctx context.Context) {
@@ -35,7 +36,12 @@ func RunServer(ctx context.Context) {
 	}()
 
 	<-ctx.Done()
-	if err := server.Close(); err != nil {
+
+	// TODO: I guess we need to return a shutdown function that takes a context
+	// to use during shutdown. For now, we'll just use a context with a 5 second
+	// timeout as a placeholder.
+	shutdownCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	if err := server.Shutdown(shutdownCtx); err != nil {
 		slog.Error("server.Close", "err", err)
 	}
 }

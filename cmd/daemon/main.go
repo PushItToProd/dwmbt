@@ -21,6 +21,6 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-sigChan
-	slog.Info("got shutdown signal - cancelling server", "sig", sig)
+	slog.Info("got shutdown signal - stopping server", "sig", sig)
 	cancel()
 }
