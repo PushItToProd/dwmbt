@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/pushittoprod/bt-daemon/pkg/bluetooth"
 	"github.com/pushittoprod/bt-daemon/pkg/daemon"
 )
 
@@ -15,7 +16,11 @@ func main() {
 
 	// handle termination
 	go func() {
-		daemon.RunServer(ctx)
+		d := daemon.Daemon{
+			ServeAddr:        ":8080",
+			BluetoothManager: bluetooth.NewBluetoothManager(),
+		}
+		d.RunServer(ctx)
 	}()
 
 	sigChan := make(chan os.Signal, 1)

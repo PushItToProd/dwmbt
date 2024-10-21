@@ -2,28 +2,91 @@ package daemon
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/pushittoprod/bt-daemon/pkg/bluetooth"
+	"github.com/pushittoprod/bt-daemon/pkg/utils"
 )
 
-func setupMux() http.Handler {
+type Daemon struct {
+	ServeAddr        string
+	BluetoothManager bluetooth.BluetoothManager
+}
+
+func (d Daemon) setupMux() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello ServeMux")
+	mux.HandleFunc("GET /list", func(w http.ResponseWriter, r *http.Request) {
+		devices, err := d.BluetoothManager.List()
+		if err != nil {
+			slog.Error("d.BluetoothManager.List", "err", err)
+			http.Error(w, "error listing bluetooth devices", http.StatusInternalServerError)
+			return
+		}
+
+		j, err := json.MarshalIndent(devices, "", "  ")
+		if err != nil {
+			slog.Error("json.MarshalIndent", "err", err)
+			http.Error(w, "error formatting json", http.StatusInternalServerError)
+			return
+		}
+
+		_, err = w.Write(j)
+		if err != nil {
+			slog.Error("w.Write", "err", err)
+			return
+		}
+	})
+	mux.HandleFunc("POST /disconnect", func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			slog.Error("r.ParseForm", "err", err)
+			http.Error(w, "could not parse request", http.StatusBadRequest)
+			return
+		}
+		macAddr := r.FormValue("macAddr")
+		if macAddr == "" {
+			http.Error(w, "macAddr param missing or blank", http.StatusBadRequest)
+			return
+		}
+		macAddr, ok := utils.NormalizeMac(macAddr)
+		if !ok {
+			http.Error(w, "invalid MAC address", http.StatusBadRequest)
+			return
+		}
+
+		// confirm the device is known and connected
+		_, err = d.BluetoothManager.Get(macAddr)
+		if err != nil {
+			// TODO: this probably means the device wasn't found, so we should
+			// check the result and return a 404 instead of an internal server
+			// error unless something actually went wrong
+			http.Error(w, "failed to get device", http.StatusInternalServerError)
+			return
+		}
+
+		// TODO: use a context with timeout here to avoid waiting forever if this hangs
+		err = d.BluetoothManager.Disconnect(macAddr)
+		if err != nil {
+			http.Error(w, "failed to disconnect", http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintf(w, "disconnected %q\n", macAddr)
+
 	})
 	return mux
 }
 
-func RunServer(ctx context.Context) {
-	mux := setupMux()
+func (d Daemon) RunServer(ctx context.Context) {
+	mux := d.setupMux()
 
-	serverAddr := ":8080"
 	server := &http.Server{
-		Addr:    serverAddr,
+		Addr:    d.ServeAddr,
 		Handler: mux,
 	}
 
