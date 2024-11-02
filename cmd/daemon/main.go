@@ -17,7 +17,7 @@ func main() {
 	// handle termination
 	go func() {
 		d := daemon.Daemon{
-			ServeAddr:        ":8080",
+			ServeAddr:        ":0",
 			BluetoothManager: bluetooth.NewBluetoothManager(),
 		}
 		d.RunServer(ctx)
