@@ -89,6 +89,25 @@ type bluetoothctlDeviceInfo struct {
 	Connected *bool
 }
 
+func (i bluetoothctlDeviceInfo) Validate() error {
+	var missingFields []string
+	if i.Name == nil {
+		missingFields = append(missingFields, "Name")
+	}
+	if i.MacAddr == nil {
+		missingFields = append(missingFields, "MacAddr")
+	}
+	if i.Connected == nil {
+		missingFields = append(missingFields, "Connected")
+	}
+
+	if len(missingFields) > 0 {
+		return fmt.Errorf("missing fields: %s", strings.Join(missingFields, ", "))
+	}
+
+	return nil
+}
+
 func (m linuxBluetoothctlBluetoothManager) Get(macAddr string) (BluetoothDevice, error) {
 	cmd := exec.Command("bluetoothctl", "info", macAddr)
 	output, err := cmd.Output()
@@ -112,8 +131,12 @@ func (m linuxBluetoothctlBluetoothManager) Get(macAddr string) (BluetoothDevice,
 			device.Connected = &connected
 		}
 	}
-	if device.Name == nil || device.MacAddr == nil || device.Connected == nil {
-		return BluetoothDevice{}, fmt.Errorf("failed to get all expected fields from bluetoothctl output: %q", output)
+	if err := device.Validate(); err != nil {
+		err = fmt.Errorf("invalid bluetoothctl output: %w", err)
+		log.Printf("failed getting device info for MAC %s: %v", macAddr, err)
+		log.Printf("full output from bluetoothctl info %s:\n%s", macAddr, output)
+		// TODO: switch to slog and log the full output here with slog.Debug()
+		return BluetoothDevice{}, err
 	}
 	return BluetoothDevice{
 		Name:      *device.Name,
