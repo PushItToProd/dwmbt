@@ -90,7 +90,6 @@ type bluetoothctlDeviceInfo struct {
 }
 
 func (m linuxBluetoothctlBluetoothManager) Get(macAddr string) (BluetoothDevice, error) {
-	var device bluetoothctlDeviceInfo
 	cmd := exec.Command("bluetoothctl", "info", macAddr)
 	output, err := cmd.Output()
 	if err != nil {
@@ -98,6 +97,7 @@ func (m linuxBluetoothctlBluetoothManager) Get(macAddr string) (BluetoothDevice,
 		return BluetoothDevice{}, err
 	}
 
+	var device bluetoothctlDeviceInfo
 	scanner := bufio.NewScanner(bytes.NewReader(output))
 	for scanner.Scan() {
 		line := scanner.Text()
