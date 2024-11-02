@@ -14,14 +14,21 @@ import (
 	"github.com/pushittoprod/bt-daemon/pkg/utils"
 )
 
+type Peer struct {
+	Addr        string
+	DisplayName string
+}
+
 type Daemon struct {
 	ServeAddr        string
 	BluetoothManager bluetooth.BluetoothManager
+	Peers            []Peer
 }
 
 func (d Daemon) setupMux() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /list", func(w http.ResponseWriter, r *http.Request) {
+	// the /_self/ endpoints only get data about our own devices
+	mux.HandleFunc("GET /_self/list", func(w http.ResponseWriter, r *http.Request) {
 		devices, err := d.BluetoothManager.List()
 		if err != nil {
 			slog.Error("d.BluetoothManager.List", "err", err)
@@ -42,7 +49,7 @@ func (d Daemon) setupMux() http.Handler {
 			return
 		}
 	})
-	mux.HandleFunc("POST /disconnect", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /_self/disconnect", func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
 			slog.Error("r.ParseForm", "err", err)
@@ -79,6 +86,12 @@ func (d Daemon) setupMux() http.Handler {
 		fmt.Fprintf(w, "disconnected %q\n", macAddr)
 
 	})
+
+	mux.HandleFunc("GET /list", func(w http.ResponseWriter, r *http.Request) {
+		// TODO: list devices connected to this instance and all peers
+		http.Error(w, "TODO", http.StatusNotImplemented)
+	})
+
 	return mux
 }
 
