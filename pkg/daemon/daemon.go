@@ -27,7 +27,8 @@ type Daemon struct {
 
 func (d Daemon) setupMux() http.Handler {
 	mux := http.NewServeMux()
-	// the /_self/ endpoints only get data about our own devices
+
+	// /_self/ endpoints only get data about our own devices
 	mux.HandleFunc("GET /_self/list", func(w http.ResponseWriter, r *http.Request) {
 		devices, err := d.BluetoothManager.List()
 		if err != nil {
@@ -87,6 +88,7 @@ func (d Daemon) setupMux() http.Handler {
 
 	})
 
+	// top-level endpoints get data about our own devices and all peers
 	mux.HandleFunc("GET /list", func(w http.ResponseWriter, r *http.Request) {
 		// TODO: list devices connected to this instance and all peers
 		http.Error(w, "TODO", http.StatusNotImplemented)
