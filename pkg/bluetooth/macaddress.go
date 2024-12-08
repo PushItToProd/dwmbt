@@ -7,7 +7,9 @@ import (
 
 var nonHexChars = regexp.MustCompile(`[^0-9A-Fa-f]`)
 
-func splitString(str string, chunkSize int) []string {
+// chunkString splits a string into chunks of length chunkSize. The last chunk may be shorter than chunkSize.
+// XXX: This might not be safe for multi-byte characters.
+func chunkString(str string, chunkSize int) []string {
 	var chunks []string
 	for i := 0; i < len(str); i += chunkSize {
 		end := i + chunkSize
@@ -33,7 +35,7 @@ func NormalizeMac(mac string) (string, bool) {
 	}
 
 	mac = strings.ToLower(mac)
-	macParts := splitString(mac, 2)
+	macParts := chunkString(mac, 2)
 	mac = strings.Join(macParts, ":")
 	return mac, true
 }
