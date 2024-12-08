@@ -2,17 +2,8 @@ package bluetooth
 
 import (
 	"fmt"
-	"os/exec"
 	"runtime"
 )
-
-// onPath returns true if the named executable is on the $PATH. This will return
-// false even if the error is not ErrNotFound, so issues could potentially arise
-// in edge cases.
-func onPath(executable string) bool {
-	_, err := exec.LookPath(executable)
-	return err == nil
-}
 
 type BluetoothDevice struct {
 	Name      string
@@ -29,12 +20,16 @@ type BluetoothManager interface {
 }
 
 func NewBluetoothManager() BluetoothManager {
+	var manager BluetoothManager
 	switch os := runtime.GOOS; os {
 	case "darwin":
-		return newMacosBlueutilBluetoothManager()
+		manager = newMacosBlueutilBluetoothManager()
 	case "linux":
-		return newLinuxBluetoothctlBluetoothManager()
+		manager = newLinuxBluetoothctlBluetoothManager()
 	default:
 		panic(fmt.Sprintf("unsupported OS: %s", os))
 	}
+	// Wrap the manager in a normalizing manager to ensure all MAC addresses are validated and formatted consistently.
+	// This saves us from having to do this in every implementation.
+	return saferBluetoothManager{inner: manager}
 }

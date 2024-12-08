@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/pushittoprod/bt-daemon/pkg/bluetooth"
-	"github.com/pushittoprod/bt-daemon/pkg/utils"
 )
 
 type Peer struct {
@@ -62,18 +62,18 @@ func (d Daemon) setupMux() http.Handler {
 			http.Error(w, "macAddr param missing or blank", http.StatusBadRequest)
 			return
 		}
-		macAddr, ok := utils.NormalizeMac(macAddr)
-		if !ok {
-			http.Error(w, "invalid MAC address", http.StatusBadRequest)
-			return
-		}
 
 		// confirm the device is known and connected
 		_, err = d.BluetoothManager.Get(macAddr)
+		if errors.Is(err, bluetooth.ErrInvalidMac) {
+			http.Error(w, "invalid MAC address", http.StatusBadRequest)
+			return
+		}
 		if err != nil {
 			// TODO: this probably means the device wasn't found, so we should
 			// check the result and return a 404 instead of an internal server
 			// error unless something actually went wrong
+			slog.Error("d.BluetoothManager.Get", "err", err)
 			http.Error(w, "failed to get device", http.StatusInternalServerError)
 			return
 		}
@@ -84,7 +84,7 @@ func (d Daemon) setupMux() http.Handler {
 			http.Error(w, "failed to disconnect", http.StatusInternalServerError)
 			return
 		}
-		fmt.Fprintf(w, "disconnected %q\n", macAddr)
+		fmt.Fprintf(w, "disconnected %q\n", macAddr) // TODO: return JSON
 
 	})
 
@@ -115,7 +115,6 @@ func (d Daemon) RunServer(ctx context.Context) {
 			return
 		}
 		slog.Info("starting server", "addr", ln.Addr().String())
-		log.Printf("starting server: http://%s", ln.Addr().String())
 		if err := server.Serve(ln); err != nil {
 			slog.Error("server.ListenAndServe", "err", err)
 			return

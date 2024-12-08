@@ -1,4 +1,4 @@
-package utils
+package bluetooth
 
 import (
 	"fmt"
