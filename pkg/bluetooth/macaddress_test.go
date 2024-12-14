@@ -2,6 +2,7 @@ package bluetooth
 
 import (
 	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -36,6 +37,37 @@ func TestNormalizeMac(t *testing.T) {
 			}
 			if mac != tt.outputMac {
 				t.Errorf("normalization failed: got %q, wanted %q", mac, tt.outputMac)
+			}
+		})
+	}
+}
+
+func TestChunkString(t *testing.T) {
+	type testcase struct {
+		input     string
+		chunkSize int
+		expected  []string
+	}
+	tests := []testcase{
+		{"abcdef", 2, []string{"ab", "cd", "ef"}},
+		{"abcdef", 3, []string{"abc", "def"}},
+		{"abcdef", 4, []string{"abcd", "ef"}},
+		{"abcdef", 6, []string{"abcdef"}},
+		{"abcdef", 1, []string{"a", "b", "c", "d", "e", "f"}},
+	}
+
+	getTestname := func(tc testcase) string {
+		return fmt.Sprintf("%q, %d => %v", tc.input, tc.chunkSize, tc.expected)
+	}
+
+	for _, tt := range tests {
+		t.Run(getTestname(tt), func(t *testing.T) {
+			chunks := chunkString(tt.input, tt.chunkSize)
+			if len(chunks) != len(tt.expected) {
+				t.Errorf("chunking failed: got %v (len=%d), wanted %v (len=%d)", chunks, len(chunks), tt.expected, len(tt.expected))
+			}
+			if !reflect.DeepEqual(chunks, tt.expected) {
+				t.Errorf("chunking failed: got %v, wanted %v", chunks, tt.expected)
 			}
 		})
 	}
