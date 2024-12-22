@@ -105,6 +105,28 @@ func (i bluetoothctlDeviceInfo) Validate() error {
 	return nil
 }
 
+func parseDeviceInfo(output []byte) (bluetoothctlDeviceInfo, error) {
+	var device bluetoothctlDeviceInfo
+	scanner := bufio.NewScanner(bytes.NewReader(output))
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Fields(line)
+		switch fields[0] {
+		case "Name:":
+			device.Name = &fields[1]
+		case "Address:":
+			device.MacAddr = &fields[1]
+		case "Connected:":
+			connected := fields[1] == "yes"
+			device.Connected = &connected
+		}
+	}
+	if err := device.Validate(); err != nil {
+		return bluetoothctlDeviceInfo{}, fmt.Errorf("invalid bluetoothctl output: %w", err)
+	}
+	return device, nil
+}
+
 func (m linuxBluetoothctlBluetoothManager) Get(ctx context.Context, macAddr string) (BluetoothDevice, error) {
 	output, err := runCmd(ctx, "bluetoothctl", "info", macAddr)
 	if err != nil {
@@ -112,26 +134,8 @@ func (m linuxBluetoothctlBluetoothManager) Get(ctx context.Context, macAddr stri
 		return BluetoothDevice{}, err
 	}
 
-	var device bluetoothctlDeviceInfo
-	scanner := bufio.NewScanner(bytes.NewReader(output))
-	for scanner.Scan() {
-		line := scanner.Text()
-		fields := strings.Fields(line)
-		switch fields[0] {
-		case "Device":
-			device.MacAddr = &fields[1]
-		case "Name:":
-			device.Name = &fields[1]
-		case "Connected:":
-			connected := fields[1] == "yes"
-			device.Connected = &connected
-		}
-	}
-	if err := device.Validate(); err != nil {
-		err = fmt.Errorf("invalid bluetoothctl output: %w", err)
-		log.Printf("failed getting device info for MAC %s: %v", macAddr, err)
-		log.Printf("full output from bluetoothctl info %s:\n%s", macAddr, output)
-		// TODO: switch to slog and log the full output here with slog.Debug()
+	device, err := parseDeviceInfo(output)
+	if err != nil {
 		return BluetoothDevice{}, err
 	}
 	return BluetoothDevice{
