@@ -14,7 +14,6 @@ import (
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// handle termination
 	go func() {
 		d := daemon.Daemon{
 			ServeAddr:        ":0",
@@ -23,6 +22,7 @@ func main() {
 		d.RunServer(ctx)
 	}()
 
+	// Shut down server nicely on SIGINT/SIGTERM
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-sigChan

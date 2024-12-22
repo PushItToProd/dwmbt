@@ -9,6 +9,7 @@ import (
 
 func main() {
 	btm := bluetooth.NewBluetoothManager()
+
 	ctx := context.Background()
 	devices, err := btm.List(ctx)
 	if err != nil {

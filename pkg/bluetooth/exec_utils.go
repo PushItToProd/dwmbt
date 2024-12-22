@@ -13,6 +13,6 @@ func onPath(executable string) bool {
 	return err == nil
 }
 
-func execcmd(ctx context.Context, cmd string, args ...string) ([]byte, error) {
+func runCmd(ctx context.Context, cmd string, args ...string) ([]byte, error) {
 	return exec.CommandContext(ctx, cmd, args...).Output()
 }

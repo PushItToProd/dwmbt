@@ -24,7 +24,7 @@ func newMacosBlueutilBluetoothManager() macosBlueutilBluetoothManager {
 }
 
 func (m macosBlueutilBluetoothManager) Connect(ctx context.Context, macAddr string) error {
-	output, err := execcmd(ctx, "blueutil", "--connect", macAddr)
+	output, err := runCmd(ctx, "blueutil", "--connect", macAddr)
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return err
@@ -35,7 +35,7 @@ func (m macosBlueutilBluetoothManager) Connect(ctx context.Context, macAddr stri
 }
 
 func (m macosBlueutilBluetoothManager) Disconnect(ctx context.Context, macAddr string) error {
-	output, err := execcmd(ctx, "blueutil", "--disconnect", macAddr)
+	output, err := runCmd(ctx, "blueutil", "--disconnect", macAddr)
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return err
@@ -46,7 +46,7 @@ func (m macosBlueutilBluetoothManager) Disconnect(ctx context.Context, macAddr s
 }
 
 func (m macosBlueutilBluetoothManager) List(ctx context.Context) ([]BluetoothDevice, error) {
-	output, err := execcmd(ctx, "blueutil", "--paired", "--format", "json")
+	output, err := runCmd(ctx, "blueutil", "--paired", "--format", "json")
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return nil, err
@@ -72,7 +72,7 @@ func (m macosBlueutilBluetoothManager) List(ctx context.Context) ([]BluetoothDev
 
 func (m macosBlueutilBluetoothManager) Get(ctx context.Context, macAddr string) (BluetoothDevice, error) {
 	var device BluetoothDevice
-	output, err := execcmd(ctx, "blueutil", "--info", macAddr, "--format", "json")
+	output, err := runCmd(ctx, "blueutil", "--info", macAddr, "--format", "json")
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return device, err
@@ -91,7 +91,7 @@ func (m macosBlueutilBluetoothManager) Get(ctx context.Context, macAddr string) 
 }
 
 func (m macosBlueutilBluetoothManager) IsConnected(ctx context.Context, macAddr string) (bool, error) {
-	output, err := execcmd(ctx, "blueutil", "--is-connected", macAddr)
+	output, err := runCmd(ctx, "blueutil", "--is-connected", macAddr)
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return false, err
