@@ -9,3 +9,7 @@ func onPath(executable string) bool {
 	_, err := exec.LookPath(executable)
 	return err == nil
 }
+
+func execcmd(cmd string, args ...string) ([]byte, error) {
+	return exec.Command(cmd, args...).Output()
+}

@@ -2,7 +2,6 @@ package bluetooth
 
 import (
 	"encoding/json"
-	"os/exec"
 )
 
 type blueutilDeviceInfo struct {
@@ -24,8 +23,7 @@ func newMacosBlueutilBluetoothManager() macosBlueutilBluetoothManager {
 }
 
 func (m macosBlueutilBluetoothManager) Connect(macAddr string) error {
-	cmd := exec.Command("blueutil", "--connect", macAddr)
-	output, err := cmd.Output()
+	output, err := execcmd("blueutil", "--connect", macAddr)
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return err
@@ -36,8 +34,7 @@ func (m macosBlueutilBluetoothManager) Connect(macAddr string) error {
 }
 
 func (m macosBlueutilBluetoothManager) Disconnect(macAddr string) error {
-	cmd := exec.Command("blueutil", "--disconnect", macAddr)
-	output, err := cmd.Output()
+	output, err := execcmd("blueutil", "--disconnect", macAddr)
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return err
@@ -48,8 +45,7 @@ func (m macosBlueutilBluetoothManager) Disconnect(macAddr string) error {
 }
 
 func (m macosBlueutilBluetoothManager) List() ([]BluetoothDevice, error) {
-	cmd := exec.Command("blueutil", "--paired", "--format", "json")
-	output, err := cmd.Output()
+	output, err := execcmd("blueutil", "--paired", "--format", "json")
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return nil, err
@@ -75,8 +71,7 @@ func (m macosBlueutilBluetoothManager) List() ([]BluetoothDevice, error) {
 
 func (m macosBlueutilBluetoothManager) Get(macAddr string) (BluetoothDevice, error) {
 	var device BluetoothDevice
-	cmd := exec.Command("blueutil", "--info", macAddr, "--format", "json")
-	output, err := cmd.Output()
+	output, err := execcmd("blueutil", "--info", macAddr, "--format", "json")
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return device, err
@@ -95,8 +90,7 @@ func (m macosBlueutilBluetoothManager) Get(macAddr string) (BluetoothDevice, err
 }
 
 func (m macosBlueutilBluetoothManager) IsConnected(macAddr string) (bool, error) {
-	cmd := exec.Command("blueutil", "--is-connected", macAddr)
-	output, err := cmd.Output()
+	output, err := execcmd("blueutil", "--is-connected", macAddr)
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return false, err
