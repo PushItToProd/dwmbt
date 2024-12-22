@@ -13,7 +13,14 @@ func main() {
 		fmt.Printf("error: %v\n", err)
 		return
 	}
+
 	for _, device := range devices {
-		fmt.Printf("%+v\n", device)
+		devinfo := fmt.Sprintf("%s (%s)", device.Name, device.MacAddr)
+		if device.Connected {
+			fmt.Printf("\x1b[97m%s \x1b[1;97m[connected]\x1b[0m", devinfo)
+		} else {
+			fmt.Printf("%s", devinfo)
+		}
+		fmt.Println()
 	}
 }
