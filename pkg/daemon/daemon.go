@@ -14,6 +14,11 @@ import (
 	"github.com/pushittoprod/bt-daemon/pkg/bluetooth"
 )
 
+const (
+	DefaultRequestTimeout  = 5 * time.Second
+	DefaultShutdownTimeout = 5 * time.Second
+)
+
 type Peer struct {
 	Addr        string
 	DisplayName string
@@ -23,6 +28,20 @@ type Daemon struct {
 	ServeAddr        string
 	BluetoothManager bluetooth.BluetoothManager
 	Peers            []Peer
+	RequestTimeout   time.Duration
+	ShutdownTimeout  time.Duration
+}
+
+func InitDaemon(d *Daemon) {
+	if d.BluetoothManager == nil {
+		d.BluetoothManager = bluetooth.NewBluetoothManager()
+	}
+	if d.RequestTimeout == 0 {
+		d.RequestTimeout = DefaultRequestTimeout
+	}
+	if d.ShutdownTimeout == 0 {
+		d.ShutdownTimeout = DefaultShutdownTimeout
+	}
 }
 
 func (d Daemon) setupMux() http.Handler {
@@ -30,7 +49,7 @@ func (d Daemon) setupMux() http.Handler {
 
 	// /_self/ endpoints only get data about our own devices
 	mux.HandleFunc("GET /_self/list", func(w http.ResponseWriter, r *http.Request) {
-		devices, err := d.BluetoothManager.List()
+		devices, err := d.BluetoothManager.List(r.Context())
 		if err != nil {
 			slog.Error("d.BluetoothManager.List", "err", err)
 			http.Error(w, "error listing bluetooth devices", http.StatusInternalServerError)
@@ -64,7 +83,7 @@ func (d Daemon) setupMux() http.Handler {
 		}
 
 		// confirm the device is known and connected
-		_, err = d.BluetoothManager.Get(macAddr)
+		_, err = d.BluetoothManager.Get(r.Context(), macAddr)
 		if errors.Is(err, bluetooth.ErrInvalidMac) {
 			http.Error(w, "invalid MAC address", http.StatusBadRequest)
 			return
@@ -79,7 +98,7 @@ func (d Daemon) setupMux() http.Handler {
 		}
 
 		// TODO: use a context with timeout here to avoid waiting forever if this hangs
-		err = d.BluetoothManager.Disconnect(macAddr)
+		err = d.BluetoothManager.Disconnect(r.Context(), macAddr)
 		if err != nil {
 			http.Error(w, "failed to disconnect", http.StatusInternalServerError)
 			return
@@ -97,12 +116,19 @@ func (d Daemon) setupMux() http.Handler {
 	return mux
 }
 
-func (d Daemon) RunServer(ctx context.Context) {
+func (d *Daemon) RunServer(ctx context.Context) {
+	if d == nil {
+		log.Panic("daemon is nil")
+	}
+	InitDaemon(d)
+
 	mux := d.setupMux()
 
+	// Wrap the mux in a timeout handler so requests won't hang forever.
+	h := http.TimeoutHandler(mux, d.RequestTimeout, "timeout")
 	server := &http.Server{
 		Addr:    d.ServeAddr,
-		Handler: mux,
+		Handler: h,
 	}
 
 	slog.Info("starting server", "server", server)
@@ -121,12 +147,14 @@ func (d Daemon) RunServer(ctx context.Context) {
 		}
 	}()
 
+	// Wait for the server to stop.
 	<-ctx.Done()
 
 	// TODO: I guess we need to return a shutdown function that takes a context
 	// to use during shutdown. For now, we'll just use a context with a 5 second
 	// timeout as a placeholder.
-	shutdownCtx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), d.ShutdownTimeout)
+	defer cancel()
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		slog.Error("server.Close", "err", err)
 	}

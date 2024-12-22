@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -17,7 +18,8 @@ func main() {
 	btm := bluetooth.NewBluetoothManager()
 
 	log.Printf("disconnecting %q", mac)
-	if err := btm.Disconnect(mac); err != nil {
+	ctx := context.Background()
+	if err := btm.Disconnect(ctx, mac); err != nil {
 		log.Fatalf("failed to disconect: %v", err)
 	}
 }

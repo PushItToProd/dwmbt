@@ -1,6 +1,9 @@
 package bluetooth
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 var ErrInvalidMac = fmt.Errorf("invalid MAC address")
 
@@ -17,38 +20,38 @@ type saferBluetoothManager struct {
 	inner BluetoothManager
 }
 
-func (m saferBluetoothManager) Connect(macAddr string) error {
+func (m saferBluetoothManager) Connect(ctx context.Context, macAddr string) error {
 	mac, ok := NormalizeMac(macAddr)
 	if !ok {
 		return ErrInvalidMac
 	}
-	return m.inner.Connect(mac)
+	return m.inner.Connect(ctx, mac)
 }
 
-func (m saferBluetoothManager) Disconnect(macAddr string) error {
+func (m saferBluetoothManager) Disconnect(ctx context.Context, macAddr string) error {
 	mac, ok := NormalizeMac(macAddr)
 	if !ok {
 		return ErrInvalidMac
 	}
-	return m.inner.Disconnect(mac)
+	return m.inner.Disconnect(ctx, mac)
 }
 
-func (m saferBluetoothManager) List() ([]BluetoothDevice, error) {
-	return m.inner.List()
+func (m saferBluetoothManager) List(ctx context.Context) ([]BluetoothDevice, error) {
+	return m.inner.List(ctx)
 }
 
-func (m saferBluetoothManager) Get(macAddr string) (BluetoothDevice, error) {
+func (m saferBluetoothManager) Get(ctx context.Context, macAddr string) (BluetoothDevice, error) {
 	mac, ok := NormalizeMac(macAddr)
 	if !ok {
 		return BluetoothDevice{}, ErrInvalidMac
 	}
-	return m.inner.Get(mac)
+	return m.inner.Get(ctx, mac)
 }
 
-func (m saferBluetoothManager) IsConnected(macAddr string) (bool, error) {
+func (m saferBluetoothManager) IsConnected(ctx context.Context, macAddr string) (bool, error) {
 	mac, ok := NormalizeMac(macAddr)
 	if !ok {
 		return false, ErrInvalidMac
 	}
-	return m.inner.IsConnected(mac)
+	return m.inner.IsConnected(ctx, mac)
 }

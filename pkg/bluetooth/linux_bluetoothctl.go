@@ -3,6 +3,7 @@ package bluetooth
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"log"
 	"regexp"
@@ -20,8 +21,8 @@ func newLinuxBluetoothctlBluetoothManager() linuxBluetoothctlBluetoothManager {
 	return linuxBluetoothctlBluetoothManager{}
 }
 
-func (m linuxBluetoothctlBluetoothManager) Connect(macAddr string) error {
-	output, err := execcmd("bluetoothctl", "connect", macAddr)
+func (m linuxBluetoothctlBluetoothManager) Connect(ctx context.Context, macAddr string) error {
+	output, err := execcmd(ctx, "bluetoothctl", "connect", macAddr)
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return err
@@ -31,8 +32,8 @@ func (m linuxBluetoothctlBluetoothManager) Connect(macAddr string) error {
 	return nil
 }
 
-func (m linuxBluetoothctlBluetoothManager) Disconnect(macAddr string) error {
-	output, err := execcmd("bluetoothctl", "disconnect", macAddr)
+func (m linuxBluetoothctlBluetoothManager) Disconnect(ctx context.Context, macAddr string) error {
+	output, err := execcmd(ctx, "bluetoothctl", "disconnect", macAddr)
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return err
@@ -44,8 +45,8 @@ func (m linuxBluetoothctlBluetoothManager) Disconnect(macAddr string) error {
 
 var bluetoothctlDeviceListRegex = regexp.MustCompile(`Device ([0-9A-Za-z:]+) (.*)`)
 
-func (m linuxBluetoothctlBluetoothManager) List() ([]BluetoothDevice, error) {
-	output, err := execcmd("bluetoothctl", "devices")
+func (m linuxBluetoothctlBluetoothManager) List(ctx context.Context) ([]BluetoothDevice, error) {
+	output, err := execcmd(ctx, "bluetoothctl", "devices")
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return nil, err
@@ -64,7 +65,7 @@ func (m linuxBluetoothctlBluetoothManager) List() ([]BluetoothDevice, error) {
 		}
 		macAddr := string(ms[1])
 		name := string(ms[2])
-		connected, err := m.IsConnected(macAddr)
+		connected, err := m.IsConnected(ctx, macAddr)
 		if err != nil {
 			log.Printf("failed to get connection status for device %q with MAC %s: %v", name, macAddr, err)
 			connected = false
@@ -104,8 +105,8 @@ func (i bluetoothctlDeviceInfo) Validate() error {
 	return nil
 }
 
-func (m linuxBluetoothctlBluetoothManager) Get(macAddr string) (BluetoothDevice, error) {
-	output, err := execcmd("bluetoothctl", "info", macAddr)
+func (m linuxBluetoothctlBluetoothManager) Get(ctx context.Context, macAddr string) (BluetoothDevice, error) {
+	output, err := execcmd(ctx, "bluetoothctl", "info", macAddr)
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return BluetoothDevice{}, err
@@ -140,8 +141,8 @@ func (m linuxBluetoothctlBluetoothManager) Get(macAddr string) (BluetoothDevice,
 	}, nil
 }
 
-func (m linuxBluetoothctlBluetoothManager) IsConnected(macAddr string) (bool, error) {
-	device, err := m.Get(macAddr)
+func (m linuxBluetoothctlBluetoothManager) IsConnected(ctx context.Context, macAddr string) (bool, error) {
+	device, err := m.Get(ctx, macAddr)
 	if err != nil {
 		return false, err
 	}

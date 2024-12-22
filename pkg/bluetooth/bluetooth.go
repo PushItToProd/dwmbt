@@ -1,6 +1,7 @@
 package bluetooth
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 )
@@ -12,11 +13,11 @@ type BluetoothDevice struct {
 }
 
 type BluetoothManager interface {
-	Connect(macAddr string) error
-	Disconnect(macAddr string) error
-	List() ([]BluetoothDevice, error)
-	Get(macAddr string) (BluetoothDevice, error)
-	IsConnected(macAddr string) (bool, error)
+	Connect(ctx context.Context, macAddr string) error
+	Disconnect(ctx context.Context, macAddr string) error
+	List(ctx context.Context) ([]BluetoothDevice, error)
+	Get(ctx context.Context, macAddr string) (BluetoothDevice, error)
+	IsConnected(ctx context.Context, macAddr string) (bool, error)
 }
 
 func NewBluetoothManager() BluetoothManager {

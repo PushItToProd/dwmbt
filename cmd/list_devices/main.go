@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pushittoprod/bt-daemon/pkg/bluetooth"
@@ -8,7 +9,8 @@ import (
 
 func main() {
 	btm := bluetooth.NewBluetoothManager()
-	devices, err := btm.List()
+	ctx := context.Background()
+	devices, err := btm.List(ctx)
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		return

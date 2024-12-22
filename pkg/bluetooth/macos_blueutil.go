@@ -1,6 +1,7 @@
 package bluetooth
 
 import (
+	"context"
 	"encoding/json"
 )
 
@@ -22,8 +23,8 @@ func newMacosBlueutilBluetoothManager() macosBlueutilBluetoothManager {
 	return macosBlueutilBluetoothManager{}
 }
 
-func (m macosBlueutilBluetoothManager) Connect(macAddr string) error {
-	output, err := execcmd("blueutil", "--connect", macAddr)
+func (m macosBlueutilBluetoothManager) Connect(ctx context.Context, macAddr string) error {
+	output, err := execcmd(ctx, "blueutil", "--connect", macAddr)
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return err
@@ -33,8 +34,8 @@ func (m macosBlueutilBluetoothManager) Connect(macAddr string) error {
 	return nil
 }
 
-func (m macosBlueutilBluetoothManager) Disconnect(macAddr string) error {
-	output, err := execcmd("blueutil", "--disconnect", macAddr)
+func (m macosBlueutilBluetoothManager) Disconnect(ctx context.Context, macAddr string) error {
+	output, err := execcmd(ctx, "blueutil", "--disconnect", macAddr)
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return err
@@ -44,8 +45,8 @@ func (m macosBlueutilBluetoothManager) Disconnect(macAddr string) error {
 	return nil
 }
 
-func (m macosBlueutilBluetoothManager) List() ([]BluetoothDevice, error) {
-	output, err := execcmd("blueutil", "--paired", "--format", "json")
+func (m macosBlueutilBluetoothManager) List(ctx context.Context) ([]BluetoothDevice, error) {
+	output, err := execcmd(ctx, "blueutil", "--paired", "--format", "json")
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return nil, err
@@ -69,9 +70,9 @@ func (m macosBlueutilBluetoothManager) List() ([]BluetoothDevice, error) {
 	return devices, nil
 }
 
-func (m macosBlueutilBluetoothManager) Get(macAddr string) (BluetoothDevice, error) {
+func (m macosBlueutilBluetoothManager) Get(ctx context.Context, macAddr string) (BluetoothDevice, error) {
 	var device BluetoothDevice
-	output, err := execcmd("blueutil", "--info", macAddr, "--format", "json")
+	output, err := execcmd(ctx, "blueutil", "--info", macAddr, "--format", "json")
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return device, err
@@ -89,8 +90,8 @@ func (m macosBlueutilBluetoothManager) Get(macAddr string) (BluetoothDevice, err
 	return device, nil
 }
 
-func (m macosBlueutilBluetoothManager) IsConnected(macAddr string) (bool, error) {
-	output, err := execcmd("blueutil", "--is-connected", macAddr)
+func (m macosBlueutilBluetoothManager) IsConnected(ctx context.Context, macAddr string) (bool, error) {
+	output, err := execcmd(ctx, "blueutil", "--is-connected", macAddr)
 	if err != nil {
 		// TODO: process the error to see what went wrong
 		return false, err
