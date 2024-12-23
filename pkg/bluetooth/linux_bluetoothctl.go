@@ -1,13 +1,13 @@
 package bluetooth
 
 import (
-	"bufio"
 	"bytes"
 	"context"
-	"fmt"
 	"log"
 	"regexp"
 	"strings"
+
+	"github.com/pushittoprod/bt-daemon/pkg/bluetooth/linux/bluetoothctl"
 )
 
 var bluetoothctlDeviceListRegex = regexp.MustCompile(`Device ([0-9A-Za-z:]+) (.*)`)
@@ -81,63 +81,6 @@ func (m linuxBluetoothctlBluetoothManager) List(ctx context.Context) ([]Bluetoot
 	return devices, nil
 }
 
-// bluetoothctlDeviceInfo represents a subset of data parsed from the output of `bluetoothctl info <macAddr>`.
-type bluetoothctlDeviceInfo struct {
-	Name      *string
-	MacAddr   *string
-	Connected *bool
-}
-
-// Validate checks that all required fields are present, just in case the returned data somehow fails to match our
-// expectations.
-func (i bluetoothctlDeviceInfo) Validate() error {
-	var missingFields []string
-	if i.Name == nil {
-		missingFields = append(missingFields, "Name")
-	}
-	if i.MacAddr == nil {
-		missingFields = append(missingFields, "MacAddr")
-	}
-	if i.Connected == nil {
-		missingFields = append(missingFields, "Connected")
-	}
-
-	if len(missingFields) > 0 {
-		return fmt.Errorf("missing fields: %s", strings.Join(missingFields, ", "))
-	}
-
-	return nil
-}
-
-// parseDeviceInfo parses the output of `bluetoothctl info <macAddr>`.
-func parseDeviceInfo(output []byte) (bluetoothctlDeviceInfo, error) {
-	var err error
-	var device bluetoothctlDeviceInfo
-	// bluetoothctl doesn't provide structured output like JSON or whatever, so we have to parse it manually. We only
-	// care about a few fields from the output, so we can just look for those lines and extract the values.
-	scanner := bufio.NewScanner(bytes.NewReader(output))
-	for scanner.Scan() {
-		line := scanner.Text()
-		fields := strings.Fields(line)
-		switch fields[0] {
-		case "Name:":
-			device.Name = &fields[1]
-		case "Address:":
-			device.MacAddr = &fields[1]
-		case "Connected:":
-			connected := fields[1] == "yes"
-			device.Connected = &connected
-		}
-
-		// As soon as we have all the fields we care about, we can stop scanning.
-		err = device.Validate()
-		if err == nil {
-			return device, nil
-		}
-	}
-	return device, err
-}
-
 func (m linuxBluetoothctlBluetoothManager) Get(ctx context.Context, macAddr string) (BluetoothDevice, error) {
 	output, err := runCmd(ctx, "bluetoothctl", "info", macAddr)
 	if err != nil {
@@ -145,7 +88,7 @@ func (m linuxBluetoothctlBluetoothManager) Get(ctx context.Context, macAddr stri
 		return BluetoothDevice{}, err
 	}
 
-	device, err := parseDeviceInfo(output)
+	device, err := bluetoothctl.ParseDeviceInfo(output)
 	if err != nil {
 		return BluetoothDevice{}, err
 	}
