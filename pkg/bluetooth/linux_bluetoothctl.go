@@ -111,6 +111,7 @@ func (i bluetoothctlDeviceInfo) Validate() error {
 
 // parseDeviceInfo parses the output of `bluetoothctl info <macAddr>`.
 func parseDeviceInfo(output []byte) (bluetoothctlDeviceInfo, error) {
+	var err error
 	var device bluetoothctlDeviceInfo
 	// bluetoothctl doesn't provide structured output like JSON or whatever, so we have to parse it manually. We only
 	// care about a few fields from the output, so we can just look for those lines and extract the values.
@@ -127,11 +128,14 @@ func parseDeviceInfo(output []byte) (bluetoothctlDeviceInfo, error) {
 			connected := fields[1] == "yes"
 			device.Connected = &connected
 		}
+
+		// As soon as we have all the fields we care about, we can stop scanning.
+		err = device.Validate()
+		if err == nil {
+			return device, nil
+		}
 	}
-	if err := device.Validate(); err != nil {
-		return bluetoothctlDeviceInfo{}, fmt.Errorf("invalid bluetoothctl output: %w", err)
-	}
-	return device, nil
+	return device, err
 }
 
 func (m linuxBluetoothctlBluetoothManager) Get(ctx context.Context, macAddr string) (BluetoothDevice, error) {
