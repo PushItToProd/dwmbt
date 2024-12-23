@@ -1,4 +1,5 @@
 
+- [ ] handle config
 - [ ] add an endpoint we can use to check if a server is actually another DWMBT instance 
   - [ ] eventually: check if it's a compatible version
 - [ ] add authentication
@@ -8,3 +9,4 @@
   - we should probably parse these all into a generic MAC address type, format them consistently when displaying them to the user, and format them appropriately for each `BluetoothManager` backend as well
     - https://pkg.go.dev/net#HardwareAddr consistently formats its output with colons but otherwise doesn't seem ideal
     - possibly useful: https://github.com/thatmattlove/go-macaddr/tree/main
+- [ ] scrape connected device states periodically and update an in-memory cache to optimize lookup times

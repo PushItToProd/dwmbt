@@ -10,6 +10,9 @@ import (
 	"strings"
 )
 
+var bluetoothctlDeviceListRegex = regexp.MustCompile(`Device ([0-9A-Za-z:]+) (.*)`)
+
+// linuxBluetoothctlBluetoothManager wraps the bluetoothctl command for Linux.
 type linuxBluetoothctlBluetoothManager struct{}
 
 func newLinuxBluetoothctlBluetoothManager() linuxBluetoothctlBluetoothManager {
@@ -42,8 +45,6 @@ func (m linuxBluetoothctlBluetoothManager) Disconnect(ctx context.Context, macAd
 	_ = output
 	return nil
 }
-
-var bluetoothctlDeviceListRegex = regexp.MustCompile(`Device ([0-9A-Za-z:]+) (.*)`)
 
 func (m linuxBluetoothctlBluetoothManager) List(ctx context.Context) ([]BluetoothDevice, error) {
 	output, err := runCmd(ctx, "bluetoothctl", "devices")
@@ -80,12 +81,15 @@ func (m linuxBluetoothctlBluetoothManager) List(ctx context.Context) ([]Bluetoot
 	return devices, nil
 }
 
+// bluetoothctlDeviceInfo represents a subset of data parsed from the output of `bluetoothctl info <macAddr>`.
 type bluetoothctlDeviceInfo struct {
 	Name      *string
 	MacAddr   *string
 	Connected *bool
 }
 
+// Validate checks that all required fields are present, just in case the returned data somehow fails to match our
+// expectations.
 func (i bluetoothctlDeviceInfo) Validate() error {
 	var missingFields []string
 	if i.Name == nil {
@@ -105,8 +109,11 @@ func (i bluetoothctlDeviceInfo) Validate() error {
 	return nil
 }
 
+// parseDeviceInfo parses the output of `bluetoothctl info <macAddr>`.
 func parseDeviceInfo(output []byte) (bluetoothctlDeviceInfo, error) {
 	var device bluetoothctlDeviceInfo
+	// bluetoothctl doesn't provide structured output like JSON or whatever, so we have to parse it manually. We only
+	// care about a few fields from the output, so we can just look for those lines and extract the values.
 	scanner := bufio.NewScanner(bytes.NewReader(output))
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -138,6 +145,7 @@ func (m linuxBluetoothctlBluetoothManager) Get(ctx context.Context, macAddr stri
 	if err != nil {
 		return BluetoothDevice{}, err
 	}
+
 	return BluetoothDevice{
 		Name:      *device.Name,
 		MacAddr:   *device.MacAddr,
