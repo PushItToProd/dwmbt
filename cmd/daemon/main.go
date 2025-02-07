@@ -16,7 +16,7 @@ func main() {
 
 	go func() {
 		d := daemon.Daemon{
-			ServeAddr:        ":0",
+			ServeAddr:        ":0", // TODO: set a default port and take an optional flag to change it
 			BluetoothManager: bluetooth.NewBluetoothManager(),
 		}
 		d.RunServer(ctx)
