@@ -48,6 +48,8 @@ func (d Daemon) setupMux() http.Handler {
 	mux := http.NewServeMux()
 
 	// /_self/ endpoints only get data about our own devices
+
+	// GET /_self/list lists Bluetooth devices connected to this host
 	mux.HandleFunc("GET /_self/list", func(w http.ResponseWriter, r *http.Request) {
 		devices, err := d.BluetoothManager.List(r.Context())
 		if err != nil {
@@ -69,6 +71,9 @@ func (d Daemon) setupMux() http.Handler {
 			return
 		}
 	})
+
+	// POST /_self/disconnect takes a form parameter `macAddr` and disconnects the device with that MAC address if
+	// possible.
 	mux.HandleFunc("POST /_self/disconnect", func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
@@ -97,17 +102,26 @@ func (d Daemon) setupMux() http.Handler {
 			return
 		}
 
-		// TODO: use a context with timeout here to avoid waiting forever if this hangs
+		// TODO: the TimeoutHandler used to wrap the mux should prevent this
+		// from hanging forever, but it would be better to support a more async
+		// approach. For example, if host A tells hosts B, C, and D to
+		// disconnect device X, instead of waiting for the requests to complete
+		// on each host, B, C, and D should reply immediately with either "that
+		// device isn't connected" or "okay, disconnecting" and, in the latter
+		// case, start disconnection on their end. Then, when disconnection
+		// finishes, they should send another message to A saying "device X has
+		// been disconnected".
 		err = d.BluetoothManager.Disconnect(r.Context(), macAddr)
 		if err != nil {
 			http.Error(w, "failed to disconnect", http.StatusInternalServerError)
 			return
 		}
 		fmt.Fprintf(w, "disconnected %q\n", macAddr) // TODO: return JSON
-
 	})
 
 	// top-level endpoints get data about our own devices and all peers
+
+	// GET /list returns a list of all devices connected to this instance and its active peers.
 	mux.HandleFunc("GET /list", func(w http.ResponseWriter, r *http.Request) {
 		// TODO: list devices connected to this instance and all peers
 		http.Error(w, "TODO", http.StatusNotImplemented)
